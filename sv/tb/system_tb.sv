@@ -1,3 +1,11 @@
+/*
+  Engineer    : Abarajithan G
+  Company     : -
+  Create Date : 31-July-2022
+  Design Name : system_tb
+  Description : Testbench to read given assembly file to be executed in the processor
+*/
+
 timeunit 1ns/1ps;
 
 module system_tb;

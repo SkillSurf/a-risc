@@ -1,3 +1,11 @@
+/*
+  Engineer    : Abarajithan G
+  Company     : -
+  Create Date : 31-July-2022
+  Design Name : register
+  Description : module to abstract out all sequential logic
+*/
+
 timeunit 1ns/1ps;
 
 module register #(

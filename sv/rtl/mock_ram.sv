@@ -1,3 +1,11 @@
+/*
+  Engineer    : Abarajithan G
+  Company     : -
+  Create Date : 31-July-2022
+  Design Name : mock_ram
+  Description : Module that mimick SRAM behavior
+*/
+
 timeunit 1ns/1ps;
 
 module mock_ram #(

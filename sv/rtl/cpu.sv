@@ -1,4 +1,11 @@
-// <100 code lines, 2h15 mins
+/*
+  Engineer    : Abarajithan G
+  Company     : -
+  Create Date : 31-July-2022
+  Design Name : A-RISC cpu
+  Description : Aba's Custom RISC CPU in 100 Lines of Code
+*/
+
 timeunit 1ns/1ps;
 
 module cpu #(NUM_GPR = 8)
@@ -36,7 +43,7 @@ module cpu #(NUM_GPR = 8)
       I_SUB  : alu_out = ac - bus;
       I_MUL  : alu_out = ac * bus;
       I_DV2  : alu_out = ac/2;
-      I_NOT  : alu_out = !ac;
+      I_NOT  : alu_out = !bus;
       default: alu_out = bus; // pass if 0
     endcase
 
