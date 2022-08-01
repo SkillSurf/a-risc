@@ -3,7 +3,7 @@
   Company     : -
   Create Date : 31-July-2022
   Design Name : A-RISC cpu
-  Description : Aba's Custom RISC CPU in 99 Lines of Code
+  Description : A Custom RISC CPU in 99 Lines of Code
 */
 
 timeunit 1ns/1ps;

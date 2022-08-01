@@ -1,4 +1,4 @@
-# Aba's Custom RISC CPU in 99 Lines of SystemVerilog
+# A Custom RISC CPU in 99 Lines of SystemVerilog
 
 A-RISC is built as a teaching material, to introduce computer architecture & implementation to newbies. Objectives of the design are as follows:
 
