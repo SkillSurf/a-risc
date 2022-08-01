@@ -48,3 +48,9 @@ The following addressing scheme is used to read from & write to registers.
 * 3           : ADR (address register for DRAM)
 * 4:NUM_GPR+3 : General Purpose Registers
 ```
+
+## Architecture (draft)
+
+![arisc](https://user-images.githubusercontent.com/26372005/182097673-9a089f6a-7f4c-4e8d-81fd-e0a5ea3c9bdd.png)
+
+
