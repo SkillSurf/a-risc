@@ -16,8 +16,8 @@ module system_tb;
   initial forever #(CLK_PERIOD/2) clk <= ~clk;
 
   localparam NUM_GPR = 8;
-  string filename_machine_code = "D:/arisc/txt/input/test.txt";
-  string filename_output = "D:/arisc/txt/output/test.txt";
+  string fn_iram = "D:/arisc/txt/input/test.txt";
+  string fn_dram = "D:/arisc/txt/output/test.txt";
 
   logic iram_write, iram_write_mux, iram_write_tb, dram_write;
   logic [15:0] iram_din=0, iram_dout;
@@ -41,7 +41,7 @@ module system_tb;
 
   cpu #(.NUM_GPR(NUM_GPR)) CPU (.*);
 
-  int fi, fo, status, i=0;
+  int fh_iram, fh_dram, status, addr=0;
   string line, opcode_s, operand_s;
   logic [7:0] opcode, operand;
 
@@ -49,21 +49,27 @@ module system_tb;
     @(posedge clk); #1
     rstn = 1;
 
-    fi = $fopen(filename_machine_code, "r");
+    fh_iram = $fopen(fn_iram, "r");
 
     while (1) begin
-      status = $fgets(line, fi);
+      status = $fgets(line, fh_iram);
+
+      // skip empty lines & comment lines
+      if (line == "\n" | line.substr(0,0) == "#") continue;
+
+      // extract opcode & operand, read them as binary
       opcode_s = line.substr(0,3);
       operand_s = line.substr(6,9);
       opcode = opcode_s.atobin();
       operand = operand_s.atobin();
 
-      IRAM.ram[i] = {operand, opcode};
-      i += 1;
+      // write into IRAM
+      IRAM.ram[addr] = {operand, opcode};
+      addr += 1;
 
       if (opcode == 8'b0) break;
     end
-    $fclose(fi);
+    $fclose(fh_iram);
 
     @(posedge clk); #1
     start = 1;
@@ -73,9 +79,10 @@ module system_tb;
     wait(idle);
     @(posedge clk); #1
 
-    fo = $fopen(filename_output, "w");
-    for (int i=0; i<256; i++) $fdisplay(fo, "%d", DRAM.ram[i]);
-    $fclose(fo);
+    // Read from DRAM into file
+    fh_dram = $fopen(fn_dram, "w");
+    for (addr=0; addr<256; addr++) $fdisplay(fh_dram, "%d", DRAM.ram[addr]);
+    $fclose(fh_dram);
   end
 
 endmodule
