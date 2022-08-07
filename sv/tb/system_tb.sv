@@ -19,15 +19,15 @@ module system_tb;
   string fn_iram = "D:/arisc/txt/input/test.txt";
   string fn_dram = "D:/arisc/txt/output/test.txt";
 
-  logic iram_write, iram_write_mux, iram_write_tb, dram_write;
-  logic [15:0] iram_din=0, iram_dout;
+  logic dram_write;
+  logic [15:0] iram_dout;
   logic [7 :0] iram_addr, dram_din, dram_dout, dram_addr;
 
   mock_ram #(.W_DATA(16), .DEPTH(256), .LATENCY(1)) IRAM (
     .clk      (clk), 
-    .write_en (iram_write),
+    .write_en (1'b0),
     .addr     (iram_addr),
-    .din      (iram_din),
+    .din      (16'b0),
     .dout     (iram_dout)
   );
 
@@ -42,8 +42,8 @@ module system_tb;
   cpu #(.NUM_GPR(NUM_GPR)) CPU (.*);
 
   int fh_iram, fh_dram, status, addr=0;
-  string line, opcode_s, operand_s;
-  logic [7:0] opcode, operand;
+  string line, opcode_s, rd_s, ra_s, rb_s;
+  logic [3:0] opcode, rd, ra, rb;
 
   initial begin
     @(posedge clk); #1
@@ -59,12 +59,17 @@ module system_tb;
 
       // extract opcode & operand, read them as binary
       opcode_s = line.substr(0,3);
-      operand_s = line.substr(6,9);
+      rd_s = line.substr(6, 9);
+      ra_s = line.substr(12,15);
+      rb_s = line.substr(18,21);
+
       opcode = opcode_s.atobin();
-      operand = operand_s.atobin();
+      rd = rd_s.atobin();
+      ra = ra_s.atobin();
+      rb = rb_s.atobin();
 
       // write into IRAM
-      IRAM.ram[addr] = {operand, opcode};
+      IRAM.ram[addr] = {rb, ra, rd, opcode};
       addr += 1;
 
       if (opcode == 8'b0) break;
