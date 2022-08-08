@@ -22,8 +22,8 @@ module cpu #(NUM_GPR = 8)
              W_REG_ADDR = $clog2(NUM_ADDRESSIBLE_REGISTERS);
 
   // Machine code encodings for instruction opcodes
-  localparam bit [7:0] I_END=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4,  I_NOT=5, 
-                       I_LDC=6, I_LDM=7, I_STM=8, I_MOV=9, I_BNE=10, I_BLT=11;
+  localparam bit [7:0] I_END=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, I_LDC=5, 
+                       I_LDM=6, I_STM=7, I_MOV=8, I_BNE=9, I_BLT=10;
   
   // Register addressing
   localparam bit [W_REG_ADDR-1:0] R_DIN=2, R_CON=3, R_ADR=4, R_JAD=5;
@@ -46,7 +46,6 @@ module cpu #(NUM_GPR = 8)
       I_SUB  : alu_out = bus_a - bus_b;
       I_MUL  : alu_out = bus_a * bus_b;
       I_DV2  : alu_out = bus_a/2;
-      I_NOT  : alu_out = !bus_a;
       default: alu_out = bus_a; // pass a if 0
     endcase
 

@@ -10,14 +10,18 @@ timeunit 1ns/1ps;
 
 module system_tb;
 
-  logic clk = 0, rstn=0, start=0, idle;
+  logic clk=0, rstn=0, start=0, idle;
 
-  localparam CLK_PERIOD =10;
+  localparam CLK_PERIOD=10;
   initial forever #(CLK_PERIOD/2) clk <= ~clk;
 
   localparam NUM_GPR = 8;
-  string fn_iram = "D:/arisc/txt/input/test.txt";
-  string fn_dram = "D:/arisc/txt/output/test.txt";
+  string file_name = "triangular.txt";
+
+
+  string file_path = "D:/arisc/txt/";
+  string fn_iram = {file_path, "input/" , file_name};
+  string fn_dram = {file_path, "output/", file_name};
 
   logic dram_write;
   logic [15:0] iram_dout;
@@ -59,9 +63,9 @@ module system_tb;
 
       // extract opcode & operand, read them as binary
       opcode_s = line.substr(0,3);
-      rd_s = line.substr(6, 9);
-      ra_s = line.substr(12,15);
-      rb_s = line.substr(18,21);
+      rd_s = line.substr(5, 8);
+      ra_s = line.substr(10,13);
+      rb_s = line.substr(15,18);
 
       opcode = opcode_s.atobin();
       rd = rd_s.atobin();
