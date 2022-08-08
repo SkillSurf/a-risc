@@ -11,12 +11,13 @@ timeunit 1ns/1ps;
 module cpu #(NUM_GPR = 8)
 (
   input  logic clk, rstn, start,
+  output logic idle,
   // dout, din are named wrt RAM, not CPU
   input  logic [15:0] iram_dout,  // 16 bit instruction
   input  logic [7 :0] dram_dout,
 
-  output logic [7 :0] iram_addr, dram_din, dram_addr,
-  output logic        dram_write, idle
+  output logic [7 :0] iram_addr,  dram_din, dram_addr,
+  output logic        dram_write
 );
   localparam NUM_ADDRESSIBLE_REGISTERS = 6 + NUM_GPR,
              W_REG_ADDR = $clog2(NUM_ADDRESSIBLE_REGISTERS);
@@ -40,7 +41,7 @@ module cpu #(NUM_GPR = 8)
   logic [W_ALU_SEL-1:0] alu_sel;
   always_comb
     case (alu_sel)
-      // Note: alu_sel encodings directly overlap with corresponding ISA
+      // Note: alu_sel encodings directly overlap with corresponding ISA encodings
       //       to simplify the instruction decoder
       I_ADD  : alu_out = bus_a + bus_b;
       I_SUB  : alu_out = bus_a - bus_b;
@@ -77,8 +78,8 @@ module cpu #(NUM_GPR = 8)
   wire signed [7:0] bus_a_in [NUM_ADDRESSIBLE_REGISTERS] = {8'd0, 8'd1, din, con, adr, jad, gpr};
   wire signed [7:0] bus_b_in [NUM_ADDRESSIBLE_REGISTERS] = {8'd0, 8'd1, din, con, adr, jad, gpr};
   
-  assign bus_a = bus_a_in[bus_a_sel]; // multiplexer
-  assign bus_b = bus_b_in[bus_b_sel];
+  assign bus_a = bus_a_in[bus_a_sel]; // simple multiplexed bus
+  assign bus_b = bus_b_in[bus_b_sel]; // simple multiplexed bus
 
 
   //*** State Machine: (Fetch, Decode, Execute)
@@ -96,10 +97,12 @@ module cpu #(NUM_GPR = 8)
   //*** PC (Program Counter)
   // Here, pc holds addr of current instruction.
   //       pc_next = iram_addr = address of next instruction
+  //       jump register tells to branch to JDR in the next clock cycle
 
   logic pc_en, jump, jump_next;
   register #(8,-1) PC   (clk, rstn, pc_en, pc_next,   pc);
-  register #(1, 0) JUMP (clk, rstn, pc_en,  jump_next, jump);
+  register #(1, 0) JUMP (clk, rstn, pc_en, jump_next, jump);
+  
   assign idle  = state == S_IDLE;
   assign pc_en = state == S_DECODE_EXECUTE;
   
@@ -118,21 +121,21 @@ module cpu #(NUM_GPR = 8)
 
     if (state == S_DECODE_EXECUTE)
       case (opcode)
-        I_END  : pc_next       = 0;
-        I_LDM  : dram_write    = 0;  // DIN <- DRAM[ADR]
-        I_STM  : dram_write    = 1;  // DRAM[ADR] <- A[ra]  (alu passes a by default)
+        I_END  : pc_next     = 0;
+        I_LDM  : dram_write  = 0;  // DIN <- DRAM[ADR]
+        I_STM  : dram_write  = 1;  // DRAM[ADR] <- A[ra]  (alu passes a by default)
         I_LDC  : begin               // R[rd] <- CON
-                  bus_a_sel    = R_CON; // bus_a  <- CON
-                  reg_en[rd]   = 1;     // AR[rd] <- bus_a (alu passes a by default)
+                  bus_a_sel  = R_CON; // bus_a  <- CON
+                  reg_en[rd] = 1;     // AR[rd] <- bus_a (alu passes a by default)
                  end
-        I_MOV  : reg_en[rd]    = 1;  // R[rd] <- A[ra] (alu passes a by default)
-        I_BNE  : begin               // if R[ra] == R[rb], pc_next = JAD
-                  alu_sel = I_SUB;   
-                  jump_next = (alu_out != 0);
+        I_MOV  : reg_en[rd]  = 1;  // R[rd] <- A[ra] (alu passes a by default)
+        I_BNE  : begin               // if R[ra] != R[rb], pc_next = JAD in next clock
+                  alu_sel    = I_SUB;   
+                  jump_next  = (alu_out != 0);
                  end
-        I_BLT  : begin               // if R[ra] == R[rb], pc_next = JAD
-                  alu_sel = I_SUB;   
-                  jump_next = (alu_out <  0);
+        I_BLT  : begin               // if R[ra] <  R[rb], pc_next = JAD in next clock
+                  alu_sel    = I_SUB;   
+                  jump_next  = (alu_out <  0);
                  end
         
         // Default case covers all arithmetic & logic instructions

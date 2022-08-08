@@ -8,20 +8,19 @@
 
 timeunit 1ns/1ps;
 
-module system_tb;
+module system_tb #(
+  NUM_GPR = 8,
+  string FILENAME = "triangular.txt"
+);
 
   logic clk=0, rstn=0, start=0, idle;
 
   localparam CLK_PERIOD=10;
   initial forever #(CLK_PERIOD/2) clk <= ~clk;
 
-  localparam NUM_GPR = 8;
-  string file_name = "triangular.txt";
-
-
   string file_path = "D:/arisc/txt/";
-  string fn_iram = {file_path, "input/" , file_name};
-  string fn_dram = {file_path, "output/", file_name};
+  string fn_iram   = {file_path, "input/" , FILENAME};
+  string fn_dram   = {file_path, "output/", FILENAME};
 
   logic dram_write;
   logic [15:0] iram_dout;
@@ -50,9 +49,9 @@ module system_tb;
   logic [3:0] opcode, rd, ra, rb;
 
   initial begin
-    @(posedge clk); #1
-    rstn = 1;
+    @(posedge clk) #1 rstn = 1; // reset
 
+    // Read from file into IRAM
     fh_iram = $fopen(fn_iram, "r");
 
     while (1) begin
@@ -61,7 +60,9 @@ module system_tb;
       // skip empty lines & comment lines
       if (line == "\n" | line.substr(0,0) == "#") continue;
 
-      // extract opcode & operand, read them as binary
+      // extract [opcode, rd, ra, rb] in the following format
+      // 0000 0000 0000 0000 
+      // (with single space in between), parse them as binary
       opcode_s = line.substr(0,3);
       rd_s = line.substr(5, 8);
       ra_s = line.substr(10,13);
@@ -80,18 +81,20 @@ module system_tb;
     end
     $fclose(fh_iram);
 
-    @(posedge clk); #1
-    start = 1;
-    @(posedge clk); #1
-    start = 0;
+    // Start processing & wait to complete
 
-    wait(idle);
-    @(posedge clk); #1
+    @(posedge clk) #1 start = 1;
+    @(posedge clk) #1 start = 0;
+
+    wait(idle); // wait for cpu to complete & raise idle
+    @(posedge clk) #1
 
     // Read from DRAM into file
     fh_dram = $fopen(fn_dram, "w");
     for (addr=0; addr<256; addr++) $fdisplay(fh_dram, "%d", DRAM.ram[addr]);
     $fclose(fh_dram);
+    
+    $finish();
   end
 
 endmodule

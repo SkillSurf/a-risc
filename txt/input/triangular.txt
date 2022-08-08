@@ -6,5 +6,5 @@
 0111      0111      | 7     7    | stm      r1      | M[ADR] <- R1            | M[n] = n(n+1)/2  
 0001 0100 0100 0001 | 1  4  4  1 | add adr, adr, 1  | ADR    <- ADR + 1       | n += 1           
 0101 0101 0000 0010 | 5  5  2    | ldc jad, 2       | JAD    <- 2             |                  
-1010      0100 0110 | 10    4  6 | bne      adr, r0 | goto JAD if (ADR < R0) | repeat until n=10
+1010      0100 0110 | 10    4  6 | bne      adr, r0 | goto JAD if (ADR < R0)  | repeat until n=10
 0000                | 0          | end              | stop                    | stop             

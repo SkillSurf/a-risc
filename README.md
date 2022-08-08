@@ -4,7 +4,7 @@ A-RISC is built as a teaching material, to introduce computer architecture & imp
 
 * Full featured: ability to run any algorithm, such as prime finding, basic image processing...etc.
 * Simple architecture: harvard, 8-bit data & addresses
-* Easy to program: RISC-V like ISA
+* Easy to program: RISC-V-like ISA
 * Contains all components of a processor for teaching: PC, state machine (fetch, decode, execute), ALU, general purpose registers, bus
 * Reduced Instruction Set: Each instruction is 16-bit, does exactly one job in one clock cycle (in cpu v1)
 * Easily pipelinable: Each instruction takes only one clock, can be pipelined later
@@ -44,7 +44,7 @@ The following addressing scheme is used to read from `ra`, `rb` source registers
 * 0    : 0   (constant wire)
 * 1    : 1   (constant wire)
 * 2    : DIN (dout wire of DRAM)
-* 3    : CON (const wire of current instruction, for LDC)
+* 3    : CON (immediate constant: 8-bit wire {rb,ra} of current instruction, for LDC)
 * 4    : ADR (address register for DRAM)
 * 5    : JAD (jump address register for IRAM)
 * 6... : General Purpose Registers
@@ -52,7 +52,7 @@ The following addressing scheme is used to read from `ra`, `rb` source registers
 
 ## Sample Assembly
 
-Sample task: Compute & store the first 10 triangular numbers: `n(n+1)/2 for n<10.`
+To compute & store the first 10 triangular numbers: `n(n+1)/2 for n < 10`.
 
 ### C++
 
@@ -68,15 +68,15 @@ int main() {
 ### Assembly
 
 ```
-Line no.:    Assembly      |      Processor operation     |    Description
+LINE NO.: ASSEMBLY         | PROCESSOR OPERATION          | DESCRIPTION
 
    0    : ldc adr, 0       | ADR    <- 0                  | n = adr = 0      
    1    : ldc r0 , 10      | R0     <- 10                 | N = r0  = 10     
 
    2    : add r1 , adr, 1  | R1     <- ADR + 1            | x = (n+1)        
-   3    : mul r1 , adr, r1 | R1     <- ADR * R1           | x = n(n+1)       
-   4    : dv2 r1 , r1      | R1     <- R1  /2             | x = n(n+1)/2     
-   5    : stm      r1      | M[ADR] <- R1                 | M[n] = n(n+1)/2  
+   3    : mul r1 , adr, r1 | R1     <- ADR * R1           | x = n*(n+1)       
+   4    : dv2 r1 , r1      | R1     <- R1  /2             | x = n*(n+1)/2     
+   5    : stm      r1      | M[ADR] <- R1                 | M[n] = n*(n+1)/2  
    6    : add adr, adr, 1  | ADR    <- ADR + 1            | n += 1           
    7    : ldc jad, 2       | JAD    <- 2                  | load jump-to address (2)
    8    : blt      adr, r0 | branch to JAD if (ADR < R0)  | repeat (2-8) until n=10
