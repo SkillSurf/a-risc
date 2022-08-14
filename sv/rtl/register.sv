@@ -6,7 +6,7 @@
   Description : module to abstract out all sequential logic
 */
 
-timeunit 1ns/1ps;
+`timescale 1ns/1ps
 
 module register #(
   parameter WIDTH = 8,

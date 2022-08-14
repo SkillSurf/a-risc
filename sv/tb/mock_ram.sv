@@ -1,3 +1,4 @@
+
 /*
   Engineer    : Abarajithan G
   Company     : -
@@ -5,8 +6,6 @@
   Design Name : mock_ram
   Description : Module that mimick SRAM behavior
 */
-
-timeunit 1ns/1ps;
 
 module mock_ram #(
   parameter  W_DATA = 8,
@@ -22,7 +21,7 @@ module mock_ram #(
 
   logic [W_DATA-1:0] ram [DEPTH];
 
-  always_ff @(posedge clk)
+  always @(posedge clk)
     if (write_en) ram[addr] <= din;
 
   wire [W_DATA-1:0] ram_out = ram[addr];

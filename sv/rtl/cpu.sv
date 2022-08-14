@@ -6,7 +6,7 @@
   Description : A Custom RISC CPU in 99 Lines of Code
 */
 
-timeunit 1ns/1ps;
+`timescale 1ns/1ps
 
 module cpu #(NUM_GPR = 8)
 (
@@ -23,7 +23,7 @@ module cpu #(NUM_GPR = 8)
              W_REG_ADDR = $clog2(NUM_ADDRESSIBLE_REGISTERS);
 
   // Machine code encodings for instruction opcodes
-  localparam bit [7:0] I_END=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, I_LDC=5, 
+  localparam bit [3:0] I_END=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, I_LDC=5, 
                        I_LDM=6, I_STM=7, I_MOV=8, I_BNE=9, I_BLT=10;
   
   // Register addressing
@@ -53,7 +53,7 @@ module cpu #(NUM_GPR = 8)
 
   //*** GPR (General Purpose Registers)
 
-  logic signed [7:0] gpr [NUM_GPR];
+  logic signed [0:NUM_GPR-1][7:0] gpr;
 
   for (genvar i=0; i<NUM_GPR; i++)
     register #(8,0) REG (clk, rstn, reg_en[i+6], alu_out, gpr[i]);
@@ -75,8 +75,8 @@ module cpu #(NUM_GPR = 8)
   
   logic [W_REG_ADDR-1:0] bus_a_sel, bus_b_sel;
   // Order should match with register addressing
-  wire signed [7:0] bus_a_in [NUM_ADDRESSIBLE_REGISTERS] = {8'd0, 8'd1, din, con, adr, jad, gpr};
-  wire signed [7:0] bus_b_in [NUM_ADDRESSIBLE_REGISTERS] = {8'd0, 8'd1, din, con, adr, jad, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_a_in = {8'd0, 8'd1, din, con, adr, jad, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_b_in = {8'd0, 8'd1, din, con, adr, jad, gpr};
   
   assign bus_a = bus_a_in[bus_a_sel]; // simple multiplexed bus
   assign bus_b = bus_b_in[bus_b_sel]; // simple multiplexed bus
@@ -86,13 +86,15 @@ module cpu #(NUM_GPR = 8)
 
   localparam bit [1:0] S_IDLE=0, S_FETCH=1, S_DECODE_EXECUTE=2;
   logic [1:0] state, state_next;
-  register #(2,S_IDLE) STATE (clk, rstn, 1'b1, state_next, state);
+
   always_comb
     case (state)
       S_IDLE           : state_next = start ? S_FETCH : S_IDLE;
       S_FETCH          : state_next = S_DECODE_EXECUTE;
       S_DECODE_EXECUTE : state_next = opcode == I_END ? S_IDLE : S_FETCH;
     endcase
+    
+  register #(2,S_IDLE) STATE (clk, rstn, 1'b1, state_next, state);
 
   //*** PC (Program Counter)
   // Here, pc holds addr of current instruction.
