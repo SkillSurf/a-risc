@@ -1,0 +1,12 @@
+mvi ar, 0                # AR    <- 0           | n = ar = 0      
+mvi r0, 10               # R0    <- 10          | N = r0  = 10     
+mvi jr, $for_n           # JR    <- 3=$for_n    | loop starts at ($for_n=3). Need to jump to it later
+
+$for_n  add r1, ar, 1    # R1    <- AR + 1      | x = (n+1)        
+        mul r1, ar, r1   # R1    <- AR * R1     | x = n(n+1)       
+        dv2 r1, r1       # R1    <- R1  /2      | x = n(n+1)/2     
+        stm     r1       # M[AR] <- R1          | M[n] = n(n+1)/2  
+        add ar, ar, 1    # AR    <- AR + 1      | n += 1           
+        blt     ar, r0   # goto JR if (AR < R0) | repeat until n=10
+
+end                      # stop                 | stop             

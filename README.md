@@ -30,7 +30,7 @@ Basic ISA with 11 instructions. Each instruction is 16-bit, and has 4 bit-fields
 5 :  LDM               :  DI        <- DRAM[AR]
 6 :  STM      ra       :  DRAM[AR]  <- R[ra]
 7 :  MVR  rd  ra       :  R[rd]     <- R[ra]
-8 :  MVI  rd  im       :  R[rd]     <- im = {rb,ra}
+8 :  MVI  rd  [ im ]   :  R[rd]     <- im = {rb,ra}
 9 :  BEQ      ra  rb   :  branch to IRAM[JR] if R[ra] == R[rb]
 10:  BLT      ra  rb   :  branch to IRAM[JR] if R[ra] <  R[rb] 
 ```
@@ -68,22 +68,36 @@ int main() {
 ### Assembly
 
 ```
-LINE NO.: ASSEMBLY       | PROCESSOR OPERATION        | DESCRIPTION
+LINE NO.: ASSEMBLY               | PROCESSOR OPERATION        | DESCRIPTION
 
-   0    : mvi ar, 0      | AR    <- 0                 | n = ar = 0      
-   1    : mvi r0, 10     | R0    <- 10                | N = r0 = 10     
-   2    : mvi jr, 3      | JR    <- 3                 | set jump-to address (3)
+   0    : mvi ar, 0              | AR    <- 0                 | n = ar = 0      
+   1    : mvi r0, 10             | R0    <- 10                | N = r0 = 10     
+   2    : mvi jr, 3              | JR    <- 3=$for_n          | set jump-to address (3)
 
-   3    : add r1, ar, 1  | R1    <- AR + 1            | x = (n+1)        
-   4    : mul r1, ar, r1 | R1    <- AR * R1           | x = n*(n+1)       
-   5    : dv2 r1, r1     | R1    <- R1  /2            | x = n*(n+1)/2     
-   6    : stm     r1     | M[AR] <- R1                | M[n] = n*(n+1)/2  
-   7    : add ar, ar, 1  | AR    <- AR + 1            | n += 1           
-   8    : blt     ar, r0 | branch to JR if (AR < R0)  | repeat (2-8) until n=10
+   3    : $for_n  add r1, ar, 1  | R1    <- AR + 1            | x = (n+1)        
+   4    :         mul r1, ar, r1 | R1    <- AR * R1           | x = n*(n+1)       
+   5    :         dv2 r1, r1     | R1    <- R1  /2            | x = n*(n+1)/2     
+   6    :         stm     r1     | M[AR] <- R1                | M[n] = n*(n+1)/2  
+   7    :         add ar, ar, 1  | AR    <- AR + 1            | n += 1           
+   8    :         blt     ar, r0 | branch to JR if (AR < R0)  | repeat (2-8) until n=10
 
-   9    : end            | stop                       | stop             
+   9    : end                    | stop                       | stop             
 ```
-See `algo/1_triangular_in_mcode.txt` for corresponding machine code.
+See `algo/1_triangular_in_both.txt` for corresponding machine code.
+
+### Assembler
+
+A simple python-based assembler also provided. If you have Python 3.7+ installed, the following command would read the assembly from the given file and generate machine code at `algo/1_triangular_in_mcode.txt`, which can be read by the SystemVerilog testbench.
+
+* Case, space insensitive
+* Commas are optional
+* Empty lines and comments (starting with #) are ignored
+* Jump labels are like `$loop1`
+
+```
+python py/assembler.py algo/1_triangular_in_assembly.txt
+```
+
 
 ### Execution waveform
 

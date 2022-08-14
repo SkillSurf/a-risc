@@ -27,7 +27,7 @@ module cpu #(NUM_GPR = 8)
                        I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BEQ=9, I_BLT=10;
   
   // Register addressing
-  localparam bit [W_REG_ADDR-1:0] R_DIN=2, R_IM=3, R_ADR=4, R_JAD=5;
+  localparam bit [W_REG_ADDR-1:0] R_DI=2, R_IM=3, R_AR=4, R_JR=5;
 
   // 8-bit processor: All registers are 8 bits
   logic signed [7:0] bus_a, bus_b, alu_out, ar, jr, im, pc, pc_next, di;
@@ -65,8 +65,8 @@ module cpu #(NUM_GPR = 8)
   assign {rb, ra, rd, opcode} = iram_dout;
   assign im = {ra, rb};
 
-  register #(8,0) AR  (clk, rstn, reg_en[R_ADR], alu_out, ar);
-  register #(8,0) JR  (clk, rstn, reg_en[R_JAD], alu_out, jr);
+  register #(8,0) AR  (clk, rstn, reg_en[R_AR], alu_out, ar);
+  register #(8,0) JR  (clk, rstn, reg_en[R_JR], alu_out, jr);
 
   assign {di, dram_addr, dram_din} = {dram_dout, ar, alu_out};
 

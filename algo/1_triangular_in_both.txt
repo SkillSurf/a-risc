@@ -1,0 +1,10 @@
+1000 0100 0000 0000 | 8  4  0    | mvi ar, 0      | AR    <- 0           | n = ar = 0      
+1000 0110 0000 1010 | 8  6  10   | mvi r0, 10     | R0    <- 10          | N = r0  = 10     
+1000 0101 0000 0011 | 8  5  2    | mvi jr, 3      | JR    <- 3           | loop starts at (3). Need to jump to it later
+0001 0111 0100 0001 | 1  7  4  1 | add r1, ar, 1  | R1    <- AR + 1      | x = (n+1)        
+0011 0111 0100 0111 | 3  7  4  7 | mul r1, ar, r1 | R1    <- AR * R1     | x = n(n+1)       
+0100 0111 0111      | 4  7  7    | dv2 r1, r1     | R1    <- R1  /2      | x = n(n+1)/2     
+0110      0111      | 6     7    | stm     r1     | M[AR] <- R1          | M[n] = n(n+1)/2  
+0001 0100 0100 0001 | 1  4  4  1 | add ar, ar, 1  | AR    <- AR + 1      | n += 1           
+1010      0100 0110 | 10    4  6 | blt     ar, r0 | goto JR if (AR < R0) | repeat until n=10
+0000                | 0          | end            | stop                 | stop             
