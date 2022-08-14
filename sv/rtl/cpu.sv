@@ -8,16 +8,16 @@
 
 `timescale 1ns/1ps
 
-module cpu #(NUM_GPR = 8)
+module cpu #(NUM_GPR = 8, W = 8)
 (
   input  logic clk, rstn, start,
   output logic idle,
   // dout, din are named wrt RAM, not CPU
-  input  logic [15:0] iram_dout,  // 16 bit instruction
-  input  logic [7 :0] dram_dout,
+  input  logic [15 :0] iram_dout,  // 16 bit instruction
+  input  logic [W-1:0] dram_dout,
 
-  output logic [7 :0] iram_addr,  dram_din, dram_addr,
-  output logic        dram_write
+  output logic [W-1:0] iram_addr,  dram_din, dram_addr,
+  output logic         dram_write
 );
   localparam NUM_ADDRESSIBLE_REGISTERS = 6 + NUM_GPR,
              W_REG_ADDR = $clog2(NUM_ADDRESSIBLE_REGISTERS);
@@ -29,9 +29,9 @@ module cpu #(NUM_GPR = 8)
   // Register addressing
   localparam bit [W_REG_ADDR-1:0] R_DI=2, R_IM=3, R_AR=4, R_JR=5;
 
-  // 8-bit processor: All registers are 8 bits
-  logic signed [7:0] bus_a, bus_b, alu_out, ar, jr, im, pc, pc_next, di;
-  logic        [3:0] opcode, rd, ra, rb;
+  // W-bit processor: All registers are W bits
+  logic signed [W-1:0] bus_a, bus_b, alu_out, ar, jr, im, pc, pc_next, di;
+  logic        [3  :0] opcode, rd, ra, rb;
   logic [NUM_ADDRESSIBLE_REGISTERS-1:0] reg_en;
 
 
@@ -53,10 +53,10 @@ module cpu #(NUM_GPR = 8)
 
   //*** GPR (General Purpose Registers)
 
-  logic signed [0:NUM_GPR-1][7:0] gpr;
+  logic signed [0:NUM_GPR-1][W-1:0] gpr;
 
   for (genvar i=0; i<NUM_GPR; i++)
-    register #(8,0) REG (clk, rstn, reg_en[i+6], alu_out, gpr[i]);
+    register #(W,0) REG (clk, rstn, reg_en[i+6], alu_out, gpr[i]);
 
 
   //*** Memory Control
@@ -65,8 +65,8 @@ module cpu #(NUM_GPR = 8)
   assign {rb, ra, rd, opcode} = iram_dout;
   assign im = {ra, rb};
 
-  register #(8,0) AR  (clk, rstn, reg_en[R_AR], alu_out, ar);
-  register #(8,0) JR  (clk, rstn, reg_en[R_JR], alu_out, jr);
+  register #(W,0) AR  (clk, rstn, reg_en[R_AR], alu_out, ar);
+  register #(W,0) JR  (clk, rstn, reg_en[R_JR], alu_out, jr);
 
   assign {di, dram_addr, dram_din} = {dram_dout, ar, alu_out};
 
@@ -75,8 +75,8 @@ module cpu #(NUM_GPR = 8)
   
   logic [W_REG_ADDR-1:0] bus_a_sel, bus_b_sel;
   // Order should match with register addressing
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_a_in = {8'd0, 8'd1, di, im, ar, jr, gpr};
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_b_in = {8'd0, 8'd1, di, im, ar, jr, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][W-1:0] bus_a_in = {W'('d0), W'('d1), di, im, ar, jr, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][W-1:0] bus_b_in = {W'('d0), W'('d1), di, im, ar, jr, gpr};
   
   assign bus_a = bus_a_in[bus_a_sel]; // simple multiplexed bus
   assign bus_b = bus_b_in[bus_b_sel]; // simple multiplexed bus
@@ -102,7 +102,7 @@ module cpu #(NUM_GPR = 8)
   //       jump_success register tells to branch to JDR in the next clock cycle
 
   logic pc_en, jump_success, jump_success_next;
-  register #(8,-1) PC (clk, rstn, pc_en, pc_next,   pc);
+  register #(W,-1) PC (clk, rstn, pc_en, pc_next,   pc);
   register #(1, 0) JS (clk, rstn, pc_en, jump_success_next, jump_success);
   
   assign idle  = state == S_IDLE;

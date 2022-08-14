@@ -3,7 +3,7 @@
 A-RISC is built as a teaching material, to introduce computer architecture & implementation to newbies. Objectives of the design are as follows:
 
 * Full featured: ability to run any algorithm, such as prime finding, basic image processing...etc.
-* Simple architecture: harvard, 8-bit data & addresses
+* Simple architecture: harvard, W-bit (parametrized) data & addresses
 * Easy to program: RISC-V-like ISA
 * Contains all components of a processor for teaching: PC, state machine (fetch, decode, execute), ALU, general purpose registers, bus
 * Reduced Instruction Set: Each instruction is 16-bit, does exactly one job in one clock cycle (in cpu v1)
@@ -104,5 +104,10 @@ python py/assembler.py algo/1_triangular_in_assembly.txt
 ![Waveform](other/triangular.png)
 
 ## Architecture
+
+Parameters:
+
+* W: Register width. Maximum depth of DRAM & IRAM will be 2**W
+* NUM_GPR: Number of General Purpose Registers
 
 ![Architecture](other/arch.png)

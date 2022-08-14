@@ -10,6 +10,7 @@ timeunit 1ns/1ps;
 
 module system_tb #(
   NUM_GPR = 8,
+  RAM_DEPTH = 256,
   string ALGO = "1_triangular"
 );
 
@@ -23,11 +24,13 @@ module system_tb #(
   string filename_in_dram  = {file_dir, ALGO, "_in_dram.txt"};
   string filename_out_dram = {file_dir, ALGO, "_out_dram.txt"};
 
+  localparam W = $clog2(RAM_DEPTH);
+
   logic dram_write;
   logic [15:0] iram_dout;
-  logic [7 :0] iram_addr, dram_din, dram_dout, dram_addr;
+  logic [W-1:0] iram_addr, dram_din, dram_dout, dram_addr;
 
-  mock_ram #(.W_DATA(16), .DEPTH(256), .LATENCY(1)) IRAM (
+  mock_ram #(.W_DATA(16), .DEPTH(RAM_DEPTH), .LATENCY(1)) IRAM (
     .clk      (clk), 
     .write_en (1'b0),
     .addr     (iram_addr),
@@ -35,7 +38,7 @@ module system_tb #(
     .dout     (iram_dout)
   );
 
-  mock_ram #(.W_DATA(8), .DEPTH(256), .LATENCY(1)) DRAM (
+  mock_ram #(.W_DATA(W), .DEPTH(RAM_DEPTH), .LATENCY(1)) DRAM (
     .clk      (clk), 
     .write_en (dram_write),
     .addr     (dram_addr),
@@ -43,7 +46,7 @@ module system_tb #(
     .dout     (dram_dout)
   );
 
-  cpu #(.NUM_GPR(NUM_GPR)) CPU (.*);
+  cpu #(.NUM_GPR(NUM_GPR), .W(W)) CPU (.*);
 
   int fh_iram, fh_in_dram, fh_out_dram, status, addr=0, value;
   string line, opcode_s, rd_s, ra_s, rb_s;
@@ -78,7 +81,7 @@ module system_tb #(
       IRAM.ram[addr] = {rb, ra, rd, opcode};
       addr += 1;
 
-      if (opcode == 8'b0) break;
+      if (opcode == 0) break;
     end
     $fclose(fh_iram);
 
@@ -92,8 +95,8 @@ module system_tb #(
         DRAM.ram[addr] = value;
         addr += 1;
       end
+      $fclose(fh_in_dram);
     end
-    $fclose(filename_in_dram);
 
     // Start processing & wait to complete
     @(posedge clk) #1 start = 1;
@@ -104,7 +107,7 @@ module system_tb #(
 
     // Read from DRAM into file
     fh_out_dram = $fopen(filename_out_dram, "w");
-    for (addr=0; addr<256; addr++) $fdisplay(fh_out_dram, "%d", DRAM.ram[addr]);
+    for (addr=0; addr<RAM_DEPTH; addr++) $fdisplay(fh_out_dram, "%d", DRAM.ram[addr]);
     $fclose(fh_out_dram);
     
     $finish();
