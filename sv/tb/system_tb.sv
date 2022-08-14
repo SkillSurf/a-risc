@@ -90,8 +90,8 @@ module system_tb #(
     if (fh_in_dram) begin
       addr = 0;
       while (!$feof(fh_in_dram)) begin
-        status = $fgets(line, fh_iram);
-        value = line.atobin();
+        status = $fgets(line, fh_in_dram);
+        value = line.atoi();
         DRAM.ram[addr] = value;
         addr += 1;
       end

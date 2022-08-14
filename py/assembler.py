@@ -24,7 +24,7 @@ Read & parse assembly, identify jump labels
 for i, line in enumerate(input_lines):
     ins = line.split("#")[0] # discard comments
 
-    if ins.isspace():
+    if ins.isspace() or ins == "":
         continue # skip blank input_lines
     
     '''
@@ -38,9 +38,8 @@ for i, line in enumerate(input_lines):
     Remove & store jump labels
     '''
     if ins[0][0] == "$":
-        label = ins[0]
+        label, *ins = ins
         jump_labels[label.upper()] = iram_addr
-        ins = ins[1:]
 
     '''
     Add line number (for debugging), and convert all to uppercase
@@ -56,7 +55,7 @@ Converts a list of registers to binary
 def reg_to_bin(operands, binary, header):
     global registers
     for operand in operands:
-        assert operand in registers, f"{header} Invalid register. Valid:{registers}"
+        assert operand in registers, f"{header} Invalid register '{operand}'. Valid:{registers}"
         binary += f"{registers.index(operand):04b} "
     return binary
 

@@ -72,7 +72,7 @@ LINE NO.: ASSEMBLY               | PROCESSOR OPERATION        | DESCRIPTION
 
    0    : mvi ar, 0              | AR    <- 0                 | n = ar = 0      
    1    : mvi r0, 10             | R0    <- 10                | N = r0 = 10     
-   2    : mvi jr, 3              | JR    <- 3=$for_n          | set jump-to address (3)
+   2    : mvi jr, $for_n         | JR    <- 3=$for_n          | set jump-to address (3)
 
    3    : $for_n  add r1, ar, 1  | R1    <- AR + 1            | x = (n+1)        
    4    :         mul r1, ar, r1 | R1    <- AR * R1           | x = n*(n+1)       
