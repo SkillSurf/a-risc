@@ -30,7 +30,7 @@ module cpu #(NUM_GPR = 8)
   localparam bit [W_REG_ADDR-1:0] R_DIN=2, R_IM=3, R_ADR=4, R_JAD=5;
 
   // 8-bit processor: All registers are 8 bits
-  logic signed [7:0] bus_a, bus_b, alu_out, adr, jad, im, pc, pc_next, din;
+  logic signed [7:0] bus_a, bus_b, alu_out, ar, jr, im, pc, pc_next, di;
   logic        [3:0] opcode, rd, ra, rb;
   logic [NUM_ADDRESSIBLE_REGISTERS-1:0] reg_en;
 
@@ -65,18 +65,18 @@ module cpu #(NUM_GPR = 8)
   assign {rb, ra, rd, opcode} = iram_dout;
   assign im = {ra, rb};
 
-  register #(8,0) ADR  (clk, rstn, reg_en[R_ADR], alu_out, adr);
-  register #(8,0) JAD  (clk, rstn, reg_en[R_JAD], alu_out, jad);
+  register #(8,0) AR  (clk, rstn, reg_en[R_ADR], alu_out, ar);
+  register #(8,0) JR  (clk, rstn, reg_en[R_JAD], alu_out, jr);
 
-  assign {din, dram_addr, dram_din} = {dram_dout, adr, alu_out};
+  assign {di, dram_addr, dram_din} = {dram_dout, ar, alu_out};
 
 
   //*** Bus
   
   logic [W_REG_ADDR-1:0] bus_a_sel, bus_b_sel;
   // Order should match with register addressing
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_a_in = {8'd0, 8'd1, din, im, adr, jad, gpr};
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_b_in = {8'd0, 8'd1, din, im, adr, jad, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_a_in = {8'd0, 8'd1, di, im, ar, jr, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_b_in = {8'd0, 8'd1, di, im, ar, jr, gpr};
   
   assign bus_a = bus_a_in[bus_a_sel]; // simple multiplexed bus
   assign bus_b = bus_b_in[bus_b_sel]; // simple multiplexed bus
@@ -99,11 +99,11 @@ module cpu #(NUM_GPR = 8)
   //*** PC (Program Counter)
   // Here, pc holds addr of current instruction.
   //       pc_next = iram_addr = address of next instruction
-  //       jump register tells to branch to JDR in the next clock cycle
+  //       jump_success register tells to branch to JDR in the next clock cycle
 
-  logic pc_en, jump, jump_next;
-  register #(8,-1) PC   (clk, rstn, pc_en, pc_next,   pc);
-  register #(1, 0) JUMP (clk, rstn, pc_en, jump_next, jump);
+  logic pc_en, jump_success, jump_success_next;
+  register #(8,-1) PC (clk, rstn, pc_en, pc_next,   pc);
+  register #(1, 0) JS (clk, rstn, pc_en, jump_success_next, jump_success);
   
   assign idle  = state == S_IDLE;
   assign pc_en = state == S_DECODE_EXECUTE;
@@ -116,28 +116,28 @@ module cpu #(NUM_GPR = 8)
     // Last assignment wins inside an always_comb
     // handy way to write a combinational decoder
 
-    {alu_sel, reg_en, dram_write, jump_next} = '0;
+    {alu_sel, reg_en, dram_write, jump_success_next} = '0;
     bus_a_sel = ra;
     bus_b_sel = rb;
-    pc_next   = jump ? jad : pc + 1;
+    pc_next   = jump_success ? jr : pc + 1;
 
     if (state == S_DECODE_EXECUTE)
       case (opcode)
         I_END  : pc_next     = 0;
-        I_LDM  : dram_write  = 0;  // DIN <- DRAM[ADR]
-        I_STM  : dram_write  = 1;  // DRAM[ADR] <- A[ra]  (alu passes a by default)
+        I_LDM  : dram_write  = 0;  // DI <- DRAM[AR]
+        I_STM  : dram_write  = 1;  // DRAM[AR] <- A[ra]  (alu passes a by default)
         I_MVI  : begin               // R[rd] <- IM
                   bus_a_sel  = R_IM; // bus_a  <- IM
                   reg_en[rd] = 1;     // AR[rd] <- bus_a (alu passes a by default)
                  end
         I_MVR  : reg_en[rd]  = 1;  // R[rd] <- A[ra] (alu passes a by default)
-        I_BNE  : begin               // if R[ra] != R[rb], pc_next = JAD in next clock
+        I_BNE  : begin               // if R[ra] != R[rb], pc_next = JR in next clock
                   alu_sel    = I_SUB;   
-                  jump_next  = (alu_out != 0);
+                  jump_success_next  = (alu_out != 0);
                  end
-        I_BLT  : begin               // if R[ra] <  R[rb], pc_next = JAD in next clock
+        I_BLT  : begin               // if R[ra] <  R[rb], pc_next = JR in next clock
                   alu_sel    = I_SUB;   
-                  jump_next  = (alu_out <  0);
+                  jump_success_next  = (alu_out <  0);
                  end
         
         // Default case covers all arithmetic & logic instructions
