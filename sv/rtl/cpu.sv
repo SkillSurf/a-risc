@@ -24,7 +24,7 @@ module cpu #(NUM_GPR = 8)
 
   // Machine code encodings for instruction opcodes
   localparam bit [3:0] I_END=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, 
-                       I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BNE=9, I_BLT=10;
+                       I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BEQ=9, I_BLT=10;
   
   // Register addressing
   localparam bit [W_REG_ADDR-1:0] R_DIN=2, R_IM=3, R_ADR=4, R_JAD=5;
@@ -131,9 +131,9 @@ module cpu #(NUM_GPR = 8)
                   reg_en[rd] = 1;     // AR[rd] <- bus_a (alu passes a by default)
                  end
         I_MVR  : reg_en[rd]  = 1;  // R[rd] <- A[ra] (alu passes a by default)
-        I_BNE  : begin               // if R[ra] != R[rb], pc_next = JR in next clock
+        I_BEQ  : begin               // if R[ra] != R[rb], pc_next = JR in next clock
                   alu_sel    = I_SUB;   
-                  jump_success_next  = (alu_out != 0);
+                  jump_success_next  = (alu_out == 0);
                  end
         I_BLT  : begin               // if R[ra] <  R[rb], pc_next = JR in next clock
                   alu_sel    = I_SUB;   
