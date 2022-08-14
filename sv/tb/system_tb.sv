@@ -10,7 +10,7 @@ timeunit 1ns/1ps;
 
 module system_tb #(
   NUM_GPR = 8,
-  string FILENAME = "triangular.txt"
+  string ALGO = "1_triangular"
 );
 
   logic clk=0, rstn=0, start=0, idle;
@@ -18,9 +18,10 @@ module system_tb #(
   localparam CLK_PERIOD=10;
   initial forever #(CLK_PERIOD/2) clk <= ~clk;
 
-  string file_path = "D:/arisc/txt/";
-  string fn_iram   = {file_path, "input/" , FILENAME};
-  string fn_dram   = {file_path, "output/", FILENAME};
+  string file_dir = "D:/arisc/algo/";
+  string filename_in_iram  = {file_dir, ALGO, "_in_mcode.txt"};
+  string filename_in_dram  = {file_dir, ALGO, "_in_dram.txt"};
+  string filename_out_dram = {file_dir, ALGO, "_out_dram.txt"};
 
   logic dram_write;
   logic [15:0] iram_dout;
@@ -44,7 +45,7 @@ module system_tb #(
 
   cpu #(.NUM_GPR(NUM_GPR)) CPU (.*);
 
-  int fh_iram, fh_dram, status, addr=0;
+  int fh_iram, fh_in_dram, fh_out_dram, status, addr=0, value;
   string line, opcode_s, rd_s, ra_s, rb_s;
   logic [3:0] opcode, rd, ra, rb;
 
@@ -52,7 +53,7 @@ module system_tb #(
     @(posedge clk) #1 rstn = 1; // reset
 
     // Read from file into IRAM
-    fh_iram = $fopen(fn_iram, "r");
+    fh_iram = $fopen(filename_in_iram, "r");
 
     while (1) begin
       status = $fgets(line, fh_iram);
@@ -81,8 +82,20 @@ module system_tb #(
     end
     $fclose(fh_iram);
 
-    // Start processing & wait to complete
+    // If in_dram file is available, open and load into dram
+    fh_in_dram = $fopen(filename_in_dram, "r");
+    if (fh_in_dram) begin
+      addr = 0;
+      while (!$feof(fh_in_dram)) begin
+        status = $fgets(line, fh_iram);
+        value = line.atobin();
+        DRAM.ram[addr] = value;
+        addr += 1;
+      end
+    end
+    $fclose(filename_in_dram);
 
+    // Start processing & wait to complete
     @(posedge clk) #1 start = 1;
     @(posedge clk) #1 start = 0;
 
@@ -90,9 +103,9 @@ module system_tb #(
     @(posedge clk) #1
 
     // Read from DRAM into file
-    fh_dram = $fopen(fn_dram, "w");
-    for (addr=0; addr<256; addr++) $fdisplay(fh_dram, "%d", DRAM.ram[addr]);
-    $fclose(fh_dram);
+    fh_out_dram = $fopen(filename_out_dram, "w");
+    for (addr=0; addr<256; addr++) $fdisplay(fh_out_dram, "%d", DRAM.ram[addr]);
+    $fclose(fh_out_dram);
     
     $finish();
   end
