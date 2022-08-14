@@ -23,14 +23,14 @@ module cpu #(NUM_GPR = 8)
              W_REG_ADDR = $clog2(NUM_ADDRESSIBLE_REGISTERS);
 
   // Machine code encodings for instruction opcodes
-  localparam bit [3:0] I_END=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, I_LDC=5, 
-                       I_LDM=6, I_STM=7, I_MOV=8, I_BNE=9, I_BLT=10;
+  localparam bit [3:0] I_END=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, 
+                       I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BNE=9, I_BLT=10;
   
   // Register addressing
-  localparam bit [W_REG_ADDR-1:0] R_DIN=2, R_CON=3, R_ADR=4, R_JAD=5;
+  localparam bit [W_REG_ADDR-1:0] R_DIN=2, R_IM=3, R_ADR=4, R_JAD=5;
 
   // 8-bit processor: All registers are 8 bits
-  logic signed [7:0] bus_a, bus_b, alu_out, adr, jad, con, pc, pc_next, din;
+  logic signed [7:0] bus_a, bus_b, alu_out, adr, jad, im, pc, pc_next, din;
   logic        [3:0] opcode, rd, ra, rb;
   logic [NUM_ADDRESSIBLE_REGISTERS-1:0] reg_en;
 
@@ -63,7 +63,7 @@ module cpu #(NUM_GPR = 8)
 
   assign iram_addr = pc_next;
   assign {rb, ra, rd, opcode} = iram_dout;
-  assign con = {ra, rb};
+  assign im = {ra, rb};
 
   register #(8,0) ADR  (clk, rstn, reg_en[R_ADR], alu_out, adr);
   register #(8,0) JAD  (clk, rstn, reg_en[R_JAD], alu_out, jad);
@@ -75,8 +75,8 @@ module cpu #(NUM_GPR = 8)
   
   logic [W_REG_ADDR-1:0] bus_a_sel, bus_b_sel;
   // Order should match with register addressing
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_a_in = {8'd0, 8'd1, din, con, adr, jad, gpr};
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_b_in = {8'd0, 8'd1, din, con, adr, jad, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_a_in = {8'd0, 8'd1, din, im, adr, jad, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][7:0] bus_b_in = {8'd0, 8'd1, din, im, adr, jad, gpr};
   
   assign bus_a = bus_a_in[bus_a_sel]; // simple multiplexed bus
   assign bus_b = bus_b_in[bus_b_sel]; // simple multiplexed bus
@@ -93,7 +93,7 @@ module cpu #(NUM_GPR = 8)
       S_FETCH          : state_next = S_DECODE_EXECUTE;
       S_DECODE_EXECUTE : state_next = opcode == I_END ? S_IDLE : S_FETCH;
     endcase
-    
+
   register #(2,S_IDLE) STATE (clk, rstn, 1'b1, state_next, state);
 
   //*** PC (Program Counter)
@@ -126,11 +126,11 @@ module cpu #(NUM_GPR = 8)
         I_END  : pc_next     = 0;
         I_LDM  : dram_write  = 0;  // DIN <- DRAM[ADR]
         I_STM  : dram_write  = 1;  // DRAM[ADR] <- A[ra]  (alu passes a by default)
-        I_LDC  : begin               // R[rd] <- CON
-                  bus_a_sel  = R_CON; // bus_a  <- CON
+        I_MVI  : begin               // R[rd] <- IM
+                  bus_a_sel  = R_IM; // bus_a  <- IM
                   reg_en[rd] = 1;     // AR[rd] <- bus_a (alu passes a by default)
                  end
-        I_MOV  : reg_en[rd]  = 1;  // R[rd] <- A[ra] (alu passes a by default)
+        I_MVR  : reg_en[rd]  = 1;  // R[rd] <- A[ra] (alu passes a by default)
         I_BNE  : begin               // if R[ra] != R[rb], pc_next = JAD in next clock
                   alu_sel    = I_SUB;   
                   jump_next  = (alu_out != 0);
