@@ -6,20 +6,20 @@ A-RISC is built as a teaching material, to introduce computer architecture & imp
 * Simple architecture: harvard, W-bit (parametrized) data & addresses
 * Easy to program: RISC-V-like ISA
 * Contains all components of a processor for teaching: PC, state machine (fetch, decode, execute), ALU, general purpose registers, bus
-* Reduced Instruction Set: Each instruction is 16-bit, does exactly one job in one clock cycle (in cpu v1)
-* Easily pipelinable: Each instruction takes only one clock, can be pipelined later
-* Easy implementation: Just 99 lines of SystemVerilog code
+* Reduced Instruction Set: Load-store ISA, each instruction is 16-bit, does exactly one job
+* Easily pipelineable: Each instruction takes 1 cycle in v1, can be easily pipelined to multiple stages (v2).
+* Easy implementation: Just 99 lines of SystemVerilog code (v1)
 
-To achieve the above objectives, design of cpu-v1 trades-off the following:
+To achieve the above objectives, design of v1 trades-off the following:
 
 * SRAMs with 1 clock latency
 * Relatively long combinational paths
 
-CPU-v3 will be a slightly modified version of v1, with a 6-stage pipeline, SRAMs with 2 clock latency, and short combinational paths for high frequency implementation.
+CPU-v2 will be a slightly modified version of v1, with a 6-stage pipeline, SRAMs with 2 clock latency, and short combinational paths for high frequency implementation.
 
 ## Instruction Set Architecture
 
-Basic ISA with 11 instructions. Each instruction is 16-bit, and has 4 bit-fields: [opcode, rd, ra, rb], 4 bits each. Instructions are fetched through a 16-bit bus in a single clock.
+Simple load-store ISA with 11 instructions. Each instruction is 16-bit, and has 4 bit-fields: [opcode, rd, ra, rb], 4 bits each. Instructions are fetched through a 16-bit bus in a single clock (v1).
 
 ```
 0 :  END               :  stop execution
@@ -41,8 +41,8 @@ CPU is parametrized with `NUM_GPR < 11` number of General Purpose Registers.
 The following addressing scheme is used to read from `ra`, `rb` source registers & write to `rd` destination registers.
 
 ```
-* 0    : 0   (immediate wire)
-* 1    : 1   (immediate wire)
+* 0    : 0   (constant wire)
+* 1    : 1   (constant wire)
 * 2    : DI  (dout wire of DRAM)
 * 3    : IM  (immediate: 8-bit wire {rb,ra} of current instruction, for MVI)
 * 4    : AR  (address register for DRAM)
@@ -94,12 +94,15 @@ A simple python-based assembler also provided. If you have Python 3.7+ installed
 * Empty lines and comments (starting with #) are ignored
 * Jump labels are like `$loop1`
 
+Assembling:
 ```
 python py/assembler.py algo/1_triangular_in_assembly.txt
 ```
 
 
 ### Execution waveform
+
+SystemVerilog testbench at `sv/tb/system_tb.sv` is configured to read text files (edit filename), load them into DRAM and IRAM, run the processor, store DRAM outputs and `$finish`.
 
 ![Waveform](other/triangular.png)
 
