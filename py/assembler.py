@@ -16,6 +16,7 @@ with open(in_filename, "r") as f:
 
 program = []
 jump_labels = {}
+variables = {}
 iram_addr = 0
 
 '''
@@ -41,6 +42,15 @@ for i, line in enumerate(input_lines):
         label, *ins = ins
         jump_labels[label.upper()] = iram_addr
 
+    if ins[0][0] == "`":
+        reg, var = ins
+        variables[var] = reg[1:]
+        continue
+    else:
+        for i, word in enumerate(ins):
+            if word in variables.keys():
+                ins[i] = variables[word]
+
     '''
     Add line number (for debugging), and convert all to uppercase
     '''
@@ -48,6 +58,8 @@ for i, line in enumerate(input_lines):
 
     program += [ins]
     iram_addr += 1
+
+    print(ins)
 
 '''
 Converts a list of registers to binary
@@ -69,7 +81,7 @@ with open(out_filename, "w") as f:
         binary = ""
         line_no, opcode, *operands = ins 
         header = f"Syntax error, line:{line_no} ->"
-        assert opcode in opcodes, f"{header} Invalid opcode. Valid:{opcodes}"
+        assert opcode in opcodes, f"{header} Invalid opcode '{opcode}'. Valid:{opcodes}"
 
         binary += f"{opcodes.index(opcode):04b} "
         

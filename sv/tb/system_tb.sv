@@ -11,7 +11,8 @@ timeunit 1ns/1ps;
 module system_tb #(
   NUM_GPR = 8,
   RAM_DEPTH = 256,
-  string ALGO = "1_triangular"
+  string ALGO = "1_triangular",
+  bit PIPELINED = 0
 );
 
   logic clk=0, rstn=0, start=0, idle;
@@ -19,18 +20,19 @@ module system_tb #(
   localparam CLK_PERIOD=10;
   initial forever #(CLK_PERIOD/2) clk <= ~clk;
 
-  string file_dir = "D:/arisc/algo/";
+  string file_dir = "D:/workshops/comparch/arisc/algo/";
   string filename_in_iram  = {file_dir, ALGO, "_in_mcode.txt"};
   string filename_in_dram  = {file_dir, ALGO, "_in_dram.txt"};
   string filename_out_dram = {file_dir, ALGO, "_out_dram.txt"};
 
   localparam W = $clog2(RAM_DEPTH);
+  localparam LATENCY = PIPELINED ? 2 : 1;
 
   logic dram_write;
   logic [15:0] iram_dout;
   logic [W-1:0] iram_addr, dram_din, dram_dout, dram_addr;
 
-  mock_ram #(.W_DATA(16), .DEPTH(RAM_DEPTH), .LATENCY(1)) IRAM (
+  mock_ram #(.W_DATA(16), .DEPTH(RAM_DEPTH), .LATENCY(LATENCY)) IRAM (
     .clk      (clk), 
     .write_en (1'b0),
     .addr     (iram_addr),
@@ -38,7 +40,7 @@ module system_tb #(
     .dout     (iram_dout)
   );
 
-  mock_ram #(.W_DATA(W), .DEPTH(RAM_DEPTH), .LATENCY(1)) DRAM (
+  mock_ram #(.W_DATA(W), .DEPTH(RAM_DEPTH), .LATENCY(LATENCY)) DRAM (
     .clk      (clk), 
     .write_en (dram_write),
     .addr     (dram_addr),
@@ -46,7 +48,10 @@ module system_tb #(
     .dout     (dram_dout)
   );
 
-  cpu #(.NUM_GPR(NUM_GPR), .W(W)) CPU (.*);
+  if (PIPELINED)
+    cpu_pipelined #(.NUM_GPR(NUM_GPR), .W(W)) CPU (.*);
+  else
+    cpu #(.NUM_GPR(NUM_GPR), .W(W)) CPU (.*);
 
   int fh_iram, fh_in_dram, fh_out_dram, status, addr=0, value;
   string line, opcode_s, rd_s, ra_s, rb_s;

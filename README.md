@@ -2,7 +2,7 @@
 
 A-RISC is built as a teaching material, to introduce computer architecture & implementation to newbies. Objectives of the design are as follows:
 
-* Full featured: ability to run any algorithm, such as prime finding, basic image processing...etc.
+* Full featured: ability to run complex algorithms, such as prime finding, basic image processing...etc.
 * Simple architecture: harvard, W-bit (parametrized) data & addresses
 * Easy to program: RISC-V-like ISA
 * Contains all components of a processor for teaching: PC, state machine (fetch, decode, execute), ALU, general purpose registers, bus
@@ -109,5 +109,19 @@ Parameters:
 
 * W: Register width. Maximum depth of DRAM & IRAM will be 2**W
 * NUM_GPR: Number of General Purpose Registers
+### Single Cycle (v1)
 
-![Architecture](other/arch.png)
+![Architecture](other/arch.PNG)
+
+### Pipelined with 6 stages (v2)
+
+![Architecture](other/arch_pipelined.PNG)
+
+## Lines of Code
+
+To count lines of code:
+
+```
+sudo apt install cloc
+cloc sv/rtl/cpu.sv sv/rtl/register.sv
+```
