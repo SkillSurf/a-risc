@@ -19,7 +19,7 @@ module cpu #(NUM_GPR = 8, W = 8)
   output logic [W-1:0] iram_addr,  dram_din, dram_addr,
   output logic         dram_write
 );
-  localparam NUM_ADDRESSIBLE_REGISTERS = 6 + NUM_GPR,
+  localparam NUM_ADDRESSIBLE_REGISTERS = 7 + NUM_GPR,
              W_REG_ADDR = $clog2(NUM_ADDRESSIBLE_REGISTERS);
 
   // Machine code encodings for instruction opcodes
@@ -27,7 +27,7 @@ module cpu #(NUM_GPR = 8, W = 8)
                        I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BEQ=9, I_BLT=10;
   
   // Register addressing
-  localparam bit [W_REG_ADDR-1:0] R_DI=2, R_IM=3, R_AR=4, R_JR=5;
+  localparam bit [W_REG_ADDR-1:0] R_DI=2, R_IM=3, R_AR=4, R_JR=5, R_PC=6;
 
   // W-bit processor: All registers are W bits
   logic signed [W-1:0] bus_a, bus_b, alu_out, ar, jr, im, pc, pc_next, di;
@@ -125,7 +125,7 @@ module cpu #(NUM_GPR = 8, W = 8)
   logic signed [0:NUM_GPR-1][W-1:0] gpr;
 
   for (genvar i=0; i<NUM_GPR; i++)
-    register #(W,0) REG (clk, rstn, reg_en[i+6], alu_out, gpr[i]);
+    register #(W,0) REG (clk, rstn, reg_en[i+7], alu_out, gpr[i]);
 
   register #(W,0) JR  (clk, rstn, reg_en[R_JR], alu_out, jr);
   register #(W,0) AR  (clk, rstn, reg_en[R_AR], alu_out, ar);
@@ -133,8 +133,8 @@ module cpu #(NUM_GPR = 8, W = 8)
 
   //*** Bus
   // Order should match with register addressing
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][W-1:0] bus_a_in = {W'('d0), W'('d1), di, im, ar, jr, gpr};
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][W-1:0] bus_b_in = {W'('d0), W'('d1), di, im, ar, jr, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][W-1:0] bus_a_in = {W'('d0), W'('d1), di, im, ar, jr, pc_next, gpr};
+  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][W-1:0] bus_b_in = {W'('d0), W'('d1), di, im, ar, jr, pc_next, gpr};
   
   assign bus_a = bus_a_in[bus_a_sel]; // simple multiplexed bus
   assign bus_b = bus_b_in[bus_b_sel]; // simple multiplexed bus

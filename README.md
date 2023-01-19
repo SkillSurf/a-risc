@@ -37,7 +37,7 @@ Simple load-store ISA with 11 instructions. Each instruction is 16-bit, and has 
 
 ## Register Addressing (rd, ra, rb)
 
-CPU is parametrized with `NUM_GPR < 11` number of General Purpose Registers.
+CPU is parametrized with `NUM_GPR < 10` number of General Purpose Registers.
 The following addressing scheme is used to read from `ra`, `rb` source registers & write to `rd` destination registers.
 
 ```
@@ -47,7 +47,8 @@ The following addressing scheme is used to read from `ra`, `rb` source registers
 * 3    : IM  (immediate: 8-bit wire {rb,ra} of current instruction, for MVI)
 * 4    : AR  (address register for DRAM)
 * 5    : JR  (jump address register for IRAM)
-* 6... : General Purpose Registers
+* 6    : PC  (pc_next = current iram_addr; to save return address in function calls)
+* 7... : General Purpose Registers
 ```
 
 ## Sample Assembly
