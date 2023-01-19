@@ -19,26 +19,33 @@ module cpu #(NUM_GPR = 8, W = 8)
   output logic [W-1:0] iram_addr,  dram_din, dram_addr,
   output logic         dram_write
 );
-  localparam NUM_ADDRESSIBLE_REGISTERS = 7 + NUM_GPR,
-             W_REG_ADDR = $clog2(NUM_ADDRESSIBLE_REGISTERS);
+
+  localparam NUM_BUS_REGS = 7 + NUM_GPR,
+             W_REG_ADDR = $clog2(NUM_BUS_REGS);
 
   // Machine code encodings for instruction opcodes
-  localparam bit [3:0] I_NOP=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, 
-                       I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BEQ=9, I_BLT=10, I_END=11;
-  
+  localparam W_ALU_SEL = 3;
+  localparam bit [3:0] I_NOP=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BEQ=9, I_BLT=10, I_END=11;
+
   // Register addressing
   localparam bit [W_REG_ADDR-1:0] R_DI=2, R_IM=3, R_AR=4, R_JR=5, R_PC=6;
 
-  // W-bit processor: All registers are W bits
+  // States
+  localparam bit [1:0] S_IDLE=0, S_FETCH=1, S_DECODE_EXECUTE=2;
+
+  // Other wires: W-bit processor - All registers are W bits
+  logic [1:0] state, state_next;
+  logic       pc_en, jump_success, jump_success_next;
+  logic [3:0] opcode, rd, ra, rb;
+  logic [W_ALU_SEL -1:0] alu_sel;
+  logic [W_REG_ADDR-1:0] bus_a_sel, bus_b_sel;
+  logic signed [0:NUM_BUS_REGS-1][W-1:0] bus_a_in, bus_b_in;
+  logic        [NUM_BUS_REGS-1:0] reg_en;
   logic signed [W-1:0] bus_a, bus_b, alu_out, ar, jr, im, pc, pc_next, di;
-  logic        [3  :0] opcode, rd, ra, rb;
-  logic [NUM_ADDRESSIBLE_REGISTERS-1:0] reg_en;
+  logic signed [0:NUM_GPR-1][W-1:0] gpr;
 
 
   //*** State Machine: (Fetch, Decode, Execute)
-
-  localparam bit [1:0] S_IDLE=0, S_FETCH=1, S_DECODE_EXECUTE=2;
-  logic [1:0] state, state_next;
 
   always_comb
     case (state)
@@ -56,10 +63,9 @@ module cpu #(NUM_GPR = 8, W = 8)
   //       pc_next = iram_addr = address of next instruction
   //       jump_success register tells to branch to JDR in the next clock cycle
 
-  logic pc_en, jump_success, jump_success_next;
-
   assign pc_en = state == S_DECODE_EXECUTE;
   register #(W,-1) PC (clk, rstn, pc_en, pc_next,   pc);
+  register #(1, 0) JS (clk, rstn, pc_en, jump_success_next, jump_success);
 
 
   //*** IRAM Control
@@ -70,10 +76,6 @@ module cpu #(NUM_GPR = 8, W = 8)
 
 
   //*** Instruction Decoder
-
-  localparam W_ALU_SEL = 3;
-  logic [W_ALU_SEL-1:0] alu_sel;
-  logic [W_REG_ADDR-1:0] bus_a_sel, bus_b_sel;
 
   always_comb begin
 
@@ -88,14 +90,14 @@ module cpu #(NUM_GPR = 8, W = 8)
     if (state == S_DECODE_EXECUTE)
       unique case (opcode)
         I_END  : pc_next     = 0;
-        I_LDM  : dram_write  = 0;  // DI <- DRAM[AR]
-        I_STM  : dram_write  = 1;  // DRAM[AR] <- A[ra]  (alu passes a by default)
+     // I_LDM  : dram_write  = 0;    // DI <- DRAM[AR], no need since its the fallback case
+        I_STM  : dram_write  = 1;    // DRAM[AR] <- A[ra]  (alu passes a by default)
         I_MVI  : begin               // R[rd] <- IM
-                  bus_a_sel  = R_IM; // bus_a  <- IM
-                  reg_en[rd] = 1;     // AR[rd] <- bus_a (alu passes a by default)
+                  bus_a_sel  = R_IM;   // bus_a  <- IM
+                  reg_en[rd] = 1;      // AR[rd] <- bus_a (alu passes a by default)
                  end
-        I_MVR  : reg_en[rd]  = 1;  // R[rd] <- A[ra] (alu passes a by default)
-        I_BEQ  : begin               // if R[ra] != R[rb], pc_next = JR in next clock
+        I_MVR  : reg_en[rd]  = 1;    // R[rd] <- A[ra] (alu passes a by default)
+        I_BEQ  : begin                 // if R[ra] != R[rb], pc_next = JR in next clock
                   alu_sel    = I_SUB;   
                   jump_success_next  = (alu_out == 0);
                  end
@@ -113,28 +115,11 @@ module cpu #(NUM_GPR = 8, W = 8)
       endcase
   end
 
-  register #(1, 0) JS (clk, rstn, pc_en, jump_success_next, jump_success);
-
-  //*** DRAM Control
-
-  assign {di, dram_addr, dram_din} = {dram_dout, ar, alu_out};
-
-
-  //*** Register Bank
-
-  logic signed [0:NUM_GPR-1][W-1:0] gpr;
-
-  for (genvar i=0; i<NUM_GPR; i++)
-    register #(W,0) REG (clk, rstn, reg_en[i+7], alu_out, gpr[i]);
-
-  register #(W,0) JR  (clk, rstn, reg_en[R_JR], alu_out, jr);
-  register #(W,0) AR  (clk, rstn, reg_en[R_AR], alu_out, ar);
-
 
   //*** Bus
   // Order should match with register addressing
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][W-1:0] bus_a_in = {W'('d0), W'('d1), di, im, ar, jr, pc_next, gpr};
-  wire signed [0:NUM_ADDRESSIBLE_REGISTERS-1][W-1:0] bus_b_in = {W'('d0), W'('d1), di, im, ar, jr, pc_next, gpr};
+  assign bus_a_in = {W'('d0), W'('d1), di, im, ar, jr, pc_next, gpr};
+  assign bus_b_in = {W'('d0), W'('d1), di, im, ar, jr, pc_next, gpr};
   
   assign bus_a = bus_a_in[bus_a_sel]; // simple multiplexed bus
   assign bus_b = bus_b_in[bus_b_sel]; // simple multiplexed bus
@@ -152,5 +137,20 @@ module cpu #(NUM_GPR = 8, W = 8)
       I_DV2  : alu_out = bus_a/2;
       default: alu_out = bus_a; // pass a if 0
     endcase
+
+
+  //*** Register Bank
+
+  for (genvar i=0; i<NUM_GPR; i++) begin: GPR
+    register #(W,0) REG (clk, rstn, reg_en[i+7], alu_out, gpr[i]);
+  end
+
+  register #(W,0) JR  (clk, rstn, reg_en[R_JR], alu_out, jr);
+  register #(W,0) AR  (clk, rstn, reg_en[R_AR], alu_out, ar);
+
+
+  //*** DRAM Control
+  
+  assign {di, dram_addr, dram_din} = {dram_dout, ar, alu_out};
 
 endmodule
