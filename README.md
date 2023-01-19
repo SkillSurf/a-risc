@@ -19,10 +19,10 @@ CPU-v2 will be a slightly modified version of v1, with a 7-stage pipeline, SRAMs
 
 ## Instruction Set Architecture
 
-Simple load-store ISA with 11 instructions. Each instruction is 16-bit, and has 4 bit-fields: [opcode, rd, ra, rb], 4 bits each. Instructions are fetched through a 16-bit bus in a single clock (v1).
+Simple load-store ISA with 12 instructions. Each instruction is 16-bit, and has 4 bit-fields: [opcode, rd, ra, rb], 4 bits each. Instructions are fetched through a 16-bit bus in a single clock (v1).
 
 ```
-0 :  END               :  stop execution
+0 :  NOP               :  do nothing
 1 :  ADD  rd  ra  rb   :  R[rd]     <- R[ra] + R[rb]
 2 :  SUB  rd  ra  rb   :  R[rd]     <- R[ra] - R[rb]
 3 :  MUL  rd  ra  rb   :  R[rd]     <- R[ra] * R[rb]
@@ -33,6 +33,7 @@ Simple load-store ISA with 11 instructions. Each instruction is 16-bit, and has 
 8 :  MVI  rd  [ im ]   :  R[rd]     <- im = {rb,ra}
 9 :  BEQ      ra  rb   :  branch to IRAM[JR] if R[ra] == R[rb]
 10:  BLT      ra  rb   :  branch to IRAM[JR] if R[ra] <  R[rb] 
+11:  END               :  stop execution
 ```
 
 ## Register Addressing (rd, ra, rb)
@@ -48,7 +49,7 @@ The following addressing scheme is used to read from `ra`, `rb` source registers
 * 4    : AR  (address register for DRAM)
 * 5    : JR  (jump address register for IRAM)
 * 6    : PC  (pc_next = current iram_addr; to save return address in function calls)
-* 7... : General Purpose Registers
+* 7... : R1..(General Purpose Registers)
 ```
 
 ## Sample Assembly
@@ -95,7 +96,7 @@ A simple python-based assembler also provided. If you have Python 3.7+ installed
 * Empty lines and comments (starting with #) are ignored
 * Jump labels are like `$loop1`
 
-Assembling:
+Command:
 ```
 python py/assembler.py algo/1_triangular_in_assembly.txt
 ```

@@ -23,8 +23,8 @@ module cpu #(NUM_GPR = 8, W = 8)
              W_REG_ADDR = $clog2(NUM_ADDRESSIBLE_REGISTERS);
 
   // Machine code encodings for instruction opcodes
-  localparam bit [3:0] I_END=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, 
-                       I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BEQ=9, I_BLT=10;
+  localparam bit [3:0] I_NOP=0, I_ADD=1, I_SUB=2, I_MUL=3, I_DV2=4, 
+                       I_LDM=5, I_STM=6, I_MVR=7, I_MVI=8, I_BEQ=9, I_BLT=10, I_END=11;
   
   // Register addressing
   localparam bit [W_REG_ADDR-1:0] R_DI=2, R_IM=3, R_AR=4, R_JR=5, R_PC=6;

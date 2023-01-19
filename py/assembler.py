@@ -1,7 +1,7 @@
 import sys
 
 NUM_GPR = 8
-opcodes = ['END', 'ADD', 'SUB', 'MUL', 'DV2', 'LDM', 'STM', 'MVR', 'MVI', 'BEQ', 'BLT']
+opcodes = ['NOP', 'ADD', 'SUB', 'MUL', 'DV2', 'LDM', 'STM', 'MVR', 'MVI', 'BEQ', 'BLT', 'END']
 registers = ['0', '1', 'DI', 'IM', 'AR', 'JR', 'PC'] + [f'R{i}' for i in range(NUM_GPR)]
 
 '''
