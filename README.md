@@ -15,7 +15,7 @@ To achieve the above objectives, design of v1 trades-off the following:
 * SRAMs with 1 clock latency
 * Relatively long combinational paths
 
-CPU-v2 will be a slightly modified version of v1, with a 6-stage pipeline, SRAMs with 2 clock latency, and short combinational paths for high frequency implementation.
+CPU-v2 will be a slightly modified version of v1, with a 7-stage pipeline, SRAMs with 2 clock latency, and short combinational paths for high frequency implementation.
 
 ## Instruction Set Architecture
 
@@ -117,9 +117,12 @@ Parameters:
 
 ![Architecture](other/arch.PNG)
 
-### Pipelined with 6 stages (v2)
+### Pipelined with 7 stages (v2)
 
 ![Architecture](other/arch_pipelined.PNG)
+### Planned Pipeline (v2)
+
+![Architecture](other/pipeline.PNG)
 
 ## Lines of Code
 
